@@ -1,7 +1,18 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>Trading Hub</title><style>*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#eaf1ff;font:15px system-ui}header{padding:22px;background:#131f33;border-bottom:1px solid #2b3c57}h1{margin:0;font-size:23px}main{max-width:1100px;margin:auto;padding:18px}.muted{color:#9cb0cc}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}.card{background:#152238;border:1px solid #30415b;border-radius:15px;padding:18px}button,select{border:1px solid #466080;border-radius:9px;padding:11px;background:#203652;color:white}button{cursor:pointer;background:#167e74}button:disabled{opacity:.5}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #34445b}#status{margin:10px 0}small{color:#a6bad3}</style></head><body><header><h1>📈 Forex + Deriv Trading Hub</h1><div class="muted">Mobile-first trading dashboard • V2.5 beta • all-market scan</div></header><main><div class="grid"><section class="card"><h2>Forex</h2><p class="muted">Forex market scanner integration coming next.</p><select disabled><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>XAU/USD</option></select><p><small>Requires a market-data API key and backend scanner.</small></p></section><section class="card"><h2>Deriv Synthetic Indices</h2><p class="muted">Live tick quotes relayed through the Render server (where available).</p><select id="symbol"><option value="R_10">Volatility 10 (loading full list…)</option></select><button id="connect">Connect live</button><div id="symbolCount" class="muted" style="margin-top:8px">Loading Deriv market list…</div><div id="status" role="status">Disconnected</div><div id="price" style="font-size:28px;font-weight:bold">—</div><small>Historical candles and breakout analysis; verify data before trading.</small></section></div><section class="card" style="margin-top:14px"><h2>Live candlestick charts</h2><div class="grid"><div><h3>M5</h3><canvas id="chart5" width="600" height="280" style="width:100%;background:#0b1220;border-radius:10px"></canvas></div><div><h3>M15</h3><canvas id="chart15" width="600" height="280" style="width:100%;background:#0b1220;border-radius:10px"></canvas></div></div><p id="alert" role="status" style="font-weight:bold;color:#25c7a5">Waiting for breakout…</p><p id="levels" class="muted">Waiting for historical candles…</p></section><section class="card" style="margin-top:14px"><h2>All Markets Scanner</h2><p class="muted">Scan the available Deriv indices in batches. Results are snapshots, not continuous background monitoring.</p><button id="scanAll">Scan all markets</button> <span id="scanStatus" class="muted">Ready</span><div style="overflow-x:auto"><table><thead><tr><th>Market</th><th>Setup</th><th>Confidence*</th><th>Entry / SL / TP1 / TP2</th></tr></thead><tbody id="scanResults"><tr><td colspan="4">Press Scan all markets to start.</td></tr></tbody></table></div><small>*Confidence is a heuristic setup score, not a win probability. Signals are experimental.</small></section><section class="card" style="margin-top:14px"><h2>Signal dashboard</h2><table><thead><tr><th>Market</th><th>Signal</th><th>Entry / SL / TP</th></tr></thead><tbody><tr><td colspan="3" class="muted">Waiting for a confirmed breakout on closed M5 candles.</td></tr></tbody></table></section><p class="muted"><small>Educational prototype. Do not trade based on this dashboard until market feeds and signal logic are validated.</small></p></main><script>
-let stream=null,series={300:[],900:[]},lastSignal='',history=[],pending=null,processedEpoch=0;
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>Trading Hub</title><style>*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#eaf1ff;font:15px system-ui}header{padding:22px;background:#131f33;border-bottom:1px solid #2b3c57}h1{margin:0;font-size:23px}main{max-width:1100px;margin:auto;padding:18px}.muted{color:#9cb0cc}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}.card{background:#152238;border:1px solid #30415b;border-radius:15px;padding:18px}button,select{border:1px solid #466080;border-radius:9px;padding:11px;background:#203652;color:white}button{cursor:pointer;background:#167e74}button:disabled{opacity:.5}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #34445b}#status{margin:10px 0}small{color:#a6bad3}</style></head><body><header><h1>📈 Forex + Deriv Trading Hub</h1><div class="muted">Mobile-first trading dashboard • V2.6 beta • hourly levels and staged alerts</div></header><main><div class="grid"><section class="card"><h2>Forex</h2><p class="muted">Forex market scanner integration coming next.</p><select disabled><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>XAU/USD</option></select><p><small>Requires a market-data API key and backend scanner.</small></p></section><section class="card"><h2>Deriv Synthetic Indices</h2><p class="muted">Live tick quotes relayed through the Render server (where available).</p><select id="symbol"><option value="R_10">Volatility 10 (loading full list…)</option></select><button id="connect">Connect live</button><div id="symbolCount" class="muted" style="margin-top:8px">Loading Deriv market list…</div><div id="status" role="status">Disconnected</div><div id="price" style="font-size:28px;font-weight:bold">—</div><small>Historical candles and breakout analysis; verify data before trading.</small></section></div><section class="card" style="margin-top:14px"><h2>Live candlestick charts</h2><div class="grid"><div><h3>M5</h3><canvas id="chart5" width="600" height="280" style="width:100%;background:#0b1220;border-radius:10px"></canvas></div><div><h3>M15</h3><canvas id="chart15" width="600" height="280" style="width:100%;background:#0b1220;border-radius:10px"></canvas></div></div><p id="alert" role="status" style="font-weight:bold;color:#25c7a5">Waiting for breakout…</p><p id="levels" class="muted">Waiting for historical candles…</p></section><section class="card" style="margin-top:14px"><h2>All Markets Scanner</h2><p class="muted">Scan the available Deriv indices in batches. Results are snapshots, not continuous background monitoring.</p><button id="scanAll">Scan all markets</button> <span id="scanStatus" class="muted">Ready</span><div style="overflow-x:auto"><table><thead><tr><th>Market</th><th>Setup</th><th>Confidence*</th><th>Entry / SL / TP1 / TP2</th></tr></thead><tbody id="scanResults"><tr><td colspan="4">Press Scan all markets to start.</td></tr></tbody></table></div><small>*Confidence is a heuristic setup score, not a win probability. Signals are experimental.</small></section><section class="card" style="margin-top:14px"><h2>Signal dashboard</h2><table><thead><tr><th>Market</th><th>Signal</th><th>Entry / SL / TP</th></tr></thead><tbody><tr><td colspan="3" class="muted">Waiting for a confirmed breakout on closed M5 candles.</td></tr></tbody></table></section><p class="muted"><small>Educational prototype. Do not trade based on this dashboard until market feeds and signal logic are validated.</small></p></main><script>
+let stream=null,series={300:[],900:[]},lastSignal='',history=[],pending=null,processedEpoch=0,levelState=null,earlyKey='';
 const status=document.querySelector('#status'),price=document.querySelector('#price'),btn=document.querySelector('#connect'),sym=document.querySelector('#symbol');
 const n=v=>Number(v), fmt=v=>Number(v).toFixed(3);
+function fixedLevels(a){
+ if(a.length<23)return null;
+ const closed=a.slice(0,-1),latest=closed[closed.length-1],hour=Math.floor(latest.epoch/3600)*3600;
+ if(levelState&&levelState.symbol===sym.value&&levelState.hour===hour)return levelState;
+ const before=closed.filter(x=>x.epoch<hour).slice(-20);
+ if(before.length<20)return levelState&&levelState.symbol===sym.value?levelState:null;
+ levelState={symbol:sym.value,hour,res:Math.max(...before.map(x=>x.high)),sup:Math.min(...before.map(x=>x.low))};
+ pending=null;earlyKey='';return levelState;
+}
+function trend15(b){const a=b.slice(-7,-1);if(a.length<6)return 0;return a.slice(3).reduce((s,x)=>s+x.close,0)/3-a.slice(0,3).reduce((s,x)=>s+x.close,0)/3;}
+
 function disconnect(){if(stream){stream.close();stream=null;}}
 function candle(x){return {epoch:n(x.epoch),open:n(x.open),high:n(x.high),low:n(x.low),close:n(x.close)};}
 function draw(tf,id){
@@ -11,7 +22,7 @@ function draw(tf,id){
  const y=v=>20+(hi-v)/range*(ht-40),step=(w-65)/a.length;
  ctx.strokeStyle='#30415b';ctx.lineWidth=1;for(let j=0;j<5;j++){let yy=20+j*(ht-40)/4;ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(w,yy);ctx.stroke();}
  a.forEach((c,i)=>{let x=10+i*step+step/2;ctx.strokeStyle=ctx.fillStyle=c.close>=c.open?'#25c7a5':'#f46b78';ctx.beginPath();ctx.moveTo(x,y(c.high));ctx.lineTo(x,y(c.low));ctx.stroke();ctx.fillRect(x-step*.28,Math.min(y(c.open),y(c.close)),Math.max(2,step*.56),Math.max(1,Math.abs(y(c.open)-y(c.close))));});
- if(a.length>=22){const closed=a.slice(-21,-1),r=Math.max(...closed.map(x=>x.high)),s=Math.min(...closed.map(x=>x.low));for(const [level,color,label] of [[r,'#ffb74d','R'],[s,'#62b6ff','S']]){ctx.strokeStyle=color;ctx.setLineDash([7,4]);ctx.beginPath();ctx.moveTo(0,y(level));ctx.lineTo(w-65,y(level));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=color;ctx.font='12px system-ui';ctx.fillText(label,w-68,y(level)-4);}}ctx.fillStyle='#a6bad3';ctx.font='13px system-ui';ctx.fillText(fmt(hi),w-56,18);ctx.fillText(fmt(lo),w-56,ht-9);
+ if(a.length>=22){const fixed=fixedLevels(series[300]);if(!fixed)return;const r=fixed.res,s=fixed.sup;for(const [level,color,label] of [[r,'#ffb74d','R'],[s,'#62b6ff','S']]){ctx.strokeStyle=color;ctx.setLineDash([7,4]);ctx.beginPath();ctx.moveTo(0,y(level));ctx.lineTo(w-65,y(level));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=color;ctx.font='12px system-ui';ctx.fillText(label,w-68,y(level)-4);}}ctx.fillStyle='#a6bad3';ctx.font='13px system-ui';ctx.fillText(fmt(hi),w-56,18);ctx.fillText(fmt(lo),w-56,ht-9);
 }
 function atr(a){let sum=0;for(let i=a.length-14;i<a.length;i++){const p=a[i-1],c=a[i];sum+=Math.max(c.high-c.low,Math.abs(c.high-p.close),Math.abs(c.low-p.close));}return sum/14;}
 function recordSignal(dir,entry,risk,epoch,kind){
@@ -25,30 +36,38 @@ function recordSignal(dir,entry,risk,epoch,kind){
 }
 function analyze(){
  const a=series[300],b=series[900];if(a.length<37||b.length<22){document.getElementById('levels').textContent='Loading candles: M5 '+a.length+'/37, M15 '+b.length+'/22';return;}
- const last=a[a.length-2],prior=a.slice(-22,-2),res=Math.max(...prior.map(x=>x.high)),sup=Math.min(...prior.map(x=>x.low));
- const confirmed=b[b.length-2],previous=b[b.length-3],up=confirmed.close>previous.close,down=confirmed.close<previous.close;
- document.getElementById('levels').textContent='20-candle resistance: '+fmt(res)+' | support: '+fmt(sup)+' | M15 trend: '+(up?'Up':down?'Down':'Flat');
- if(last.epoch<=processedEpoch)return;
- processedEpoch=last.epoch;
+ const fixed=fixedLevels(a);if(!fixed){document.getElementById('levels').textContent='Waiting for 20 candles before hourly level boundary';return;}
+ const {res,sup}=fixed,trend=trend15(b);
+ document.getElementById('levels').textContent='Hourly resistance: '+fmt(res)+' | support: '+fmt(sup)+' | M15 trend: '+(trend>0?'Up':trend<0?'Down':'Flat');
+ const last=a[a.length-2];if(!last||last.epoch<=processedEpoch)return;processedEpoch=last.epoch;
  const risk=atr(a.slice(0,-1));if(!Number.isFinite(risk)||risk<=0)return;
- if(pending){
+ if(pending&&last.epoch>pending.epoch){
   const hit=pending.dir==='BUY'?last.low<=pending.level&&last.close>pending.level:last.high>=pending.level&&last.close<pending.level;
   if(hit){recordSignal(pending.dir,last.close,risk,last.epoch,'RETEST CONFIRMED');pending=null;}
   else if(last.epoch-pending.epoch>3600)pending=null;
  }
- const dir=last.close>res&&up?'BUY':last.close<sup&&down?'SELL':null;
+ const previous=a[a.length-3],buy=previous.close<=res&&last.close>res,sell=previous.close>=sup&&last.close<sup;
+ const dir=buy?'BUY':sell?'SELL':null;
  if(!dir)return;
- const level=dir==='BUY'?res:sup;
- recordSignal(dir,last.close,risk,last.epoch,'BREAKOUT');
- pending={dir,level,epoch:last.epoch};
+ const aligned=dir==='BUY'?trend>0:trend<0;
+ recordSignal(dir,last.close,risk,last.epoch,aligned?'BREAKOUT CONFIRMED':'BREAKOUT (COUNTERTREND)');
+ pending={dir,level:dir==='BUY'?res:sup,epoch:last.epoch};
+}
+function checkEarly(p,epoch){
+ const fixed=levelState;if(!fixed||fixed.symbol!==sym.value)return;
+ const dir=p>fixed.res?'BUY':p<fixed.sup?'SELL':null;
+ if(!dir)return;
+ const bucket=Math.floor(epoch/300)*300,key=sym.value+':'+bucket+':'+dir;
+ if(key===earlyKey)return;earlyKey=key;
+ document.getElementById('alert').textContent=sym.value+' '+dir+' EARLY BREAKOUT (unconfirmed) at '+fmt(p);
 }
 function updateTick(d){
  const p=n(d.quote),epoch=n(d.epoch);if(!Number.isFinite(p)||!epoch)return;
- price.textContent=d.quote;status.textContent='Live: '+d.symbol;
+ price.textContent=d.quote;status.textContent='Live: '+d.symbol;checkEarly(p,epoch);
  for(const tf of [300,900]){let a=series[tf],bucket=Math.floor(epoch/tf)*tf,last=a[a.length-1];if(!last||bucket>last.epoch){a.push({epoch:bucket,open:p,high:p,low:p,close:p});if(a.length>150)a.shift();analyze();}else if(bucket===last.epoch){last.high=Math.max(last.high,p);last.low=Math.min(last.low,p);last.close=p;}draw(tf,tf===300?'chart5':'chart15');}
 }
 btn.onclick=()=>{
- disconnect();series={300:[],900:[]};history=[];pending=null;processedEpoch=0;lastSignal='';document.getElementById('alert').textContent='Waiting for breakout…';document.querySelector('tbody').innerHTML='<tr><td colspan="3">Waiting for a confirmed breakout on closed M5 candles.</td></tr>';price.textContent='—';status.textContent='Connecting through Render…';
+ disconnect();series={300:[],900:[]};history=[];pending=null;processedEpoch=0;levelState=null;earlyKey='';lastSignal='';document.getElementById('alert').textContent='Waiting for breakout…';document.querySelector('tbody').innerHTML='<tr><td colspan="3">Waiting for a confirmed breakout on closed M5 candles.</td></tr>';price.textContent='—';status.textContent='Connecting through Render…';
  const connection=new EventSource('/api/deriv/stream?symbol='+encodeURIComponent(sym.value));stream=connection;
  connection.addEventListener('status',e=>{if(stream===connection)status.textContent=JSON.parse(e.data).message;});
  connection.addEventListener('candles',e=>{if(stream!==connection)return;const d=JSON.parse(e.data),tf=n(d.timeframe);if(tf!==300&&tf!==900)return;series[tf]=d.candles.map(candle).sort((a,b)=>a.epoch-b.epoch);draw(tf,tf===300?'chart5':'chart15');analyze();});
@@ -72,10 +91,10 @@ let scanning=false;
 function setupScore(raw){
  const a=(raw[300]||[]).map(candle),b=(raw[900]||[]).map(candle);
  if(a.length<35||b.length<25)return {symbol:raw.symbol,label:'Insufficient candles',score:0};
- const last=a[a.length-2],prior=a.slice(-22,-2),res=Math.max(...prior.map(x=>x.high)),sup=Math.min(...prior.map(x=>x.low));
+ const last=a[a.length-2],hour=Math.floor(last.epoch/3600)*3600,prior=a.filter(x=>x.epoch<hour).slice(-20);if(prior.length<20)return {symbol:raw.symbol,label:'Waiting for hourly levels',score:0};const res=Math.max(...prior.map(x=>x.high)),sup=Math.min(...prior.map(x=>x.low));
  const closes=b.slice(-7,-1).map(x=>x.close),trend=closes[closes.length-1]-closes[0];
  const risk=atr(a.slice(0,-1));if(!Number.isFinite(risk)||risk<=0)return {symbol:raw.symbol,label:'Insufficient ATR',score:0};
- const dir=last.close>res?'BUY':last.close<sup?'SELL':null;
+ const prev=a[a.length-3],dir=prev.close<=res&&last.close>res?'BUY':prev.close>=sup&&last.close<sup?'SELL':null;
  const aligned=dir==='BUY'?trend>0:dir==='SELL'?trend<0:false;
  const distance=dir==='BUY'?(last.close-res)/risk:dir==='SELL'?(sup-last.close)/risk:0;
  const score=dir?Math.min(90,Math.round(45+(aligned?25:0)+Math.min(20,distance*10))):0;
@@ -106,5 +125,5 @@ document.getElementById('scanAll').onclick=async()=>{
 };
 
 loadSymbols();
-sym.onchange=()=>{disconnect();series={300:[],900:[]};pending=null;processedEpoch=0;status.textContent='Disconnected';price.textContent='—';};
+sym.onchange=()=>{disconnect();series={300:[],900:[]};pending=null;processedEpoch=0;levelState=null;earlyKey='';status.textContent='Disconnected';price.textContent='—';};
 </script></body></html>
