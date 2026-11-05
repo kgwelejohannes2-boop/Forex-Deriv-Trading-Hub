@@ -19,8 +19,8 @@ function fetchCatalog(){
 }
 app.get('/api/deriv/symbols',async(_req,res)=>{
  try{
-  if(!catalog||Date.now()-catalogAt>3600000){const all=await fetchCatalog();catalog=all.filter(x=>x.market==='synthetic_index' || x.market==='synthetic_indices' || x.market==='synthetic');catalogAt=Date.now();}
-  res.json({symbols:catalog.map(x=>({symbol:x.symbol,name:x.display_name||x.symbol})),count:catalog.length});
+  if(!catalog||Date.now()-catalogAt>3600000){const all=await fetchCatalog();catalog=all.filter(x=>x && typeof (x.symbol||x.underlying_symbol)==='string' && (String(x.market||'').includes('synthetic') || String(x.market_display_name||'').toLowerCase().includes('synthetic')));catalogAt=Date.now();}
+  res.json({symbols:catalog.map(x=>({symbol:x.symbol||x.underlying_symbol,name:x.display_name||x.symbol||x.underlying_symbol})),count:catalog.length});
  }catch(e){res.status(502).json({error:e.message});}
 });
 app.get('/api/deriv/stream', (req,res) => {
