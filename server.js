@@ -12,7 +12,7 @@ function fetchCatalog(){
   const ws=new WebSocket(endpoint,{handshakeTimeout:12000});
   const timer=setTimeout(()=>{ws.terminate();reject(new Error('Deriv symbol lookup timed out'));},16000);
   const finish=(err,data)=>{clearTimeout(timer);ws.close();err?reject(err):resolve(data);};
-  ws.once('open',()=>ws.send(JSON.stringify({active_symbols:'brief',product_type:'basic'})));
+  ws.once('open',()=>ws.send(JSON.stringify({active_symbols:'brief'})));
   ws.on('message',raw=>{try{const d=JSON.parse(raw.toString());if(d.error)finish(new Error(d.error.message));else if(d.active_symbols)finish(null,d.active_symbols);}catch(e){finish(e);}});
   ws.once('error',e=>{clearTimeout(timer);reject(e);});
  });
