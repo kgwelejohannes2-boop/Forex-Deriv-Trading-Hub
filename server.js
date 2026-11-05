@@ -80,6 +80,32 @@ app.get('/api/deriv/stream', (req,res) => {
 
 const forexPairs=['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD','USD/CHF','NZD/USD','USD/ZAR','EUR/GBP','GBP/JPY','XAU/USD','BTC/USD'];
 const forexCache=new Map();
+
+// Public scheduled economic events. Calendar does NOT establish directional bias.
+let calendarCache={at:0,events:[]};
+app.get('/api/forex/calendar',async(req,res)=>{
+ const pair=String(req.query.pair||'EUR/USD');
+ if(!forexPairs.includes(pair))return res.status(400).json({error:'Unsupported market'});
+ const currencies=pair==='XAU/USD'||pair==='BTC/USD'?['USD']:pair.split('/').filter(x=>x!=='ZAR');
+ try{
+  if(!calendarCache.at||Date.now()-calendarCache.at>900000){
+   const url='https://showmytrades.com/api/public/calendar/v1?impact=high&days=3';
+   const upstream=await fetch(url,{signal:AbortSignal.timeout(12000)});
+   if(!upstream.ok)throw new Error('Calendar HTTP '+upstream.status);
+   const payload=await upstream.json();
+   if(!Array.isArray(payload.events))throw new Error('Unexpected calendar format');
+   calendarCache={at:Date.now(),events:payload.events};
+  }
+  const now=Date.now();
+  const events=calendarCache.events.filter(x=>currencies.includes(x.currency)&&Number.isFinite(Number(x.ts))).map(x=>({
+   currency:x.currency,title:String(x.title||'Economic event'),impact:x.impact,time:new Date(Number(x.ts)*1000).toISOString(),ts:Number(x.ts),status:String(x.status||'scheduled')
+  })).sort((a,b)=>a.ts-b.ts);
+  const blocked=events.some(x=>Math.abs(x.ts*1000-now)<=30*60000);
+  res.json({pair,calendarAvailable:true,source:'ShowMyTrades',fetchedAt:new Date(calendarCache.at).toISOString(),newsBlocked:blocked,events:events.slice(0,25),directionalBias:'UNAVAILABLE',confirmedSignalAllowed:false});
+ }catch(e){
+  res.status(503).json({pair,calendarAvailable:false,newsBlocked:true,directionalBias:'UNAVAILABLE',confirmedSignalAllowed:false,error:e.message});
+ }
+});
 app.get('/api/forex/status',(_req,res)=>res.json({priceFeedConfigured:Boolean(process.env.TWELVE_DATA_API_KEY),fundamentalsFeedConfigured:false,pairs:forexPairs}));
 app.get('/api/forex/candles',async(req,res)=>{
  const pair=String(req.query.pair||'EUR/USD'),tf=String(req.query.interval||'15min');
