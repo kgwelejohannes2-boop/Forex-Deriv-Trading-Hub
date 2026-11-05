@@ -15,8 +15,7 @@ app.get('/api/deriv/stream', (req,res) => {
   res.flushHeaders();
   const send = (type,data) => { if(!res.writableEnded) res.write('event: '+type+'\ndata: '+JSON.stringify(data)+'\n\n'); };
   send('status',{message:'Connecting to Deriv through server…'});
-  const appId = process.env.DERIV_APP_ID || '1089';
-  const socket = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id='+encodeURIComponent(appId), {handshakeTimeout:12000});
+  const socket = new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public', {handshakeTimeout:12000});
   let opened=false;
   const timeout=setTimeout(()=>{send('problem',{message:'Deriv upstream timed out'});socket.terminate();},18000);
   const heartbeat=setInterval(()=>{if(!res.writableEnded)res.write(': ping\n\n');},15000);
