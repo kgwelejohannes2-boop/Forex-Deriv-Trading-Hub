@@ -46,9 +46,9 @@ async function loadSymbols(){
   const r=await fetch('/api/deriv/symbols');const data=await r.json();
   if(!r.ok)throw new Error(data.error||'Symbol lookup failed');
   if(!data.symbols?.length)throw new Error('Deriv returned no synthetic indices');
-  const current=sym.value;sym.textContent='';
-  for(const item of data.symbols.sort((a,b)=>a.name.localeCompare(b.name))){const o=document.createElement('option');o.value=item.symbol;o.textContent=item.name;sym.appendChild(o);}
-  if([...sym.options].some(o=>o.value===current))sym.value=current;
+  const current=sym.value;const previous=[...sym.options].map(o=>({value:o.value,text:o.textContent}));sym.textContent='';
+  for(const item of data.symbols.filter(x=>x && typeof x.symbol==='string' && x.symbol.length).sort((a,b)=>String(a.name||a.symbol).localeCompare(String(b.name||b.symbol)))){const o=document.createElement('option');o.value=item.symbol;o.textContent=item.name||item.symbol;sym.appendChild(o);}
+  if(!sym.options.length){for(const item of previous){const o=document.createElement('option');o.value=item.value;o.textContent=item.text;sym.appendChild(o);}throw new Error('No valid symbols in response');}if([...sym.options].some(o=>o.value===current))sym.value=current;
   document.getElementById('symbolCount').textContent=data.count+' synthetic indices available';
  }catch(e){document.getElementById('symbolCount').textContent='Could not load full list: '+e.message;}
 }
