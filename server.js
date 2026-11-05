@@ -23,6 +23,34 @@ app.get('/api/deriv/symbols',async(_req,res)=>{
   res.json({symbols:catalog.map(x=>({symbol:x.symbol||x.underlying_symbol,name:x.display_name||x.symbol||x.underlying_symbol})),count:catalog.length});
  }catch(e){res.status(502).json({error:e.message});}
 });
+
+// Bounded batch scanner: one upstream connection, six symbols per request.
+app.get('/api/deriv/scan',async(req,res)=>{
+ const requested=String(req.query.symbols||'').split(',').filter(Boolean).slice(0,6);
+ if(!requested.length||requested.some(x=>!/^[A-Za-z0-9_]{2,40}$/.test(x)))return res.status(400).json({error:'Invalid symbol batch'});
+ try{
+  const known=catalog||await fetchCatalog();
+  const valid=new Set(known.map(x=>x.symbol||x.underlying_symbol));
+  if(requested.some(x=>!valid.has(x)))return res.status(400).json({error:'Unknown symbol'});
+  const results=await new Promise((resolve,reject)=>{
+   const ws=new WebSocket(endpoint,{handshakeTimeout:12000}),received=new Map(),errors=[];
+   let settled=false;
+   const finish=()=>{if(settled)return;settled=true;clearTimeout(timer);ws.close();resolve({results:[...received.values()],errors});};
+   const timer=setTimeout(finish,22000);
+   ws.on('open',()=>{requested.forEach((symbol,i)=>{for(const tf of [300,900])ws.send(JSON.stringify({ticks_history:symbol,count:65,end:'latest',style:'candles',granularity:tf,req_id:1000+i*2+(tf===900?1:0)}));});});
+   ws.on('message',raw=>{try{
+    const d=JSON.parse(raw.toString()),id=Number(d.req_id),index=Math.floor((id-1000)/2),symbol=requested[index],tf=(id-1000)%2?900:300;
+    if(!symbol)return;
+    if(d.error){errors.push({symbol,timeframe:tf,message:d.error.message});}
+    else if(d.candles){const entry=received.get(symbol)||{symbol};entry[tf]=d.candles;received.set(symbol,entry);}
+    if(received.size===requested.length&&requested.every(x=>received.get(x)?.[300]&&received.get(x)?.[900]))finish();
+   }catch(e){errors.push({message:e.message});}});
+   ws.on('error',e=>{if(!settled){settled=true;clearTimeout(timer);reject(e);}});
+   ws.on('close',()=>{if(!settled)finish();});
+  });
+  res.json(results);
+ }catch(e){res.status(502).json({error:e.message});}
+});
 app.get('/api/deriv/stream', (req,res) => {
   const symbol = String(req.query.symbol || 'R_10');
   if (!/^[A-Za-z0-9_]{2,40}$/.test(symbol)) return res.status(400).json({error:'Invalid symbol'});
