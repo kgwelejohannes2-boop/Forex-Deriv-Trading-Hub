@@ -113,15 +113,21 @@ app.get('/api/forex/candles',async(req,res)=>{
  const key=process.env.TWELVE_DATA_API_KEY;
  if(!key)return res.status(503).json({error:'Twelve Data API key not configured. Add TWELVE_DATA_API_KEY to Render environment.'});
  const cacheKey=pair+':'+tf,old=forexCache.get(cacheKey);
- if(old&&Date.now()-old.time<60000)return res.json(old.data);
+ const ttl={'5min':240000,'15min':840000,'1h':3540000}[tf];
+ if(old&&Date.now()-old.time<ttl)return res.json({...old.data,cacheHit:true});
  try{
   const url=new URL('https://api.twelvedata.com/time_series');
   url.searchParams.set('symbol',pair);url.searchParams.set('interval',tf);url.searchParams.set('outputsize','120');url.searchParams.set('timezone','UTC');url.searchParams.set('apikey',key);
   const response=await fetch(url,{signal:AbortSignal.timeout(12000)});
   const data=await response.json();
-  if(!response.ok||data.status==='error'||!Array.isArray(data.values))return res.status(502).json({error:data.message||'Forex data provider returned no candles'});
+  if(!response.ok||data.status==='error'||!Array.isArray(data.values)){
+   const message=String(data.message||'Forex data provider returned no candles');
+   const limited=response.status===429||data.code===429||/limit|credit|quota|too many requests/i.test(message);
+   if(limited)res.setHeader('Retry-After','60');
+   return res.status(limited?429:502).json({error:message,code:data.code||response.status,rateLimited:limited,pair,interval:tf});
+  }
   const candles=data.values.map(x=>({time:x.datetime,open:Number(x.open),high:Number(x.high),low:Number(x.low),close:Number(x.close)})).reverse();
-  const result={pair,interval:tf,candles,provider:'Twelve Data',providerTimeZone:'UTC'};
+  const result={pair,interval:tf,candles,provider:'Twelve Data',providerTimeZone:'UTC',cacheHit:false};
   forexCache.set(cacheKey,{time:Date.now(),data:result});res.json(result);
  }catch(e){res.status(502).json({error:'Forex price feed unavailable: '+e.message});}
 });
