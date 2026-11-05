@@ -77,4 +77,27 @@ app.get('/api/deriv/stream', (req,res) => {
   socket.on('close',(code)=>{clearTimeout(timeout);send('status',{message:'Deriv connection closed (code '+code+')'});if(!res.writableEnded)res.end();});
   req.on('close',()=>{clearTimeout(timeout);clearInterval(heartbeat);if(socket.readyState===WebSocket.OPEN||socket.readyState===WebSocket.CONNECTING)socket.terminate();});
 });
+
+const forexPairs=['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD','USD/CHF','NZD/USD','USD/ZAR','EUR/GBP','GBP/JPY'];
+const forexCache=new Map();
+app.get('/api/forex/status',(_req,res)=>res.json({priceFeedConfigured:Boolean(process.env.TWELVE_DATA_API_KEY),fundamentalsFeedConfigured:false,pairs:forexPairs}));
+app.get('/api/forex/candles',async(req,res)=>{
+ const pair=String(req.query.pair||'EUR/USD'),tf=String(req.query.interval||'15min');
+ if(!forexPairs.includes(pair)||!['5min','15min','1h'].includes(tf))return res.status(400).json({error:'Unsupported pair or timeframe'});
+ const key=process.env.TWELVE_DATA_API_KEY;
+ if(!key)return res.status(503).json({error:'Twelve Data API key not configured. Add TWELVE_DATA_API_KEY to Render environment.'});
+ const cacheKey=pair+':'+tf,old=forexCache.get(cacheKey);
+ if(old&&Date.now()-old.time<60000)return res.json(old.data);
+ try{
+  const url=new URL('https://api.twelvedata.com/time_series');
+  url.searchParams.set('symbol',pair);url.searchParams.set('interval',tf);url.searchParams.set('outputsize','120');url.searchParams.set('apikey',key);
+  const response=await fetch(url,{signal:AbortSignal.timeout(12000)});
+  const data=await response.json();
+  if(!response.ok||data.status==='error'||!Array.isArray(data.values))return res.status(502).json({error:data.message||'Forex data provider returned no candles'});
+  const candles=data.values.map(x=>({time:x.datetime,open:Number(x.open),high:Number(x.high),low:Number(x.low),close:Number(x.close)})).reverse();
+  const result={pair,interval:tf,candles,provider:'Twelve Data',providerTimeZone:data.meta?.exchange_timezone||'UTC'};
+  forexCache.set(cacheKey,{time:Date.now(),data:result});res.json(result);
+ }catch(e){res.status(502).json({error:'Forex price feed unavailable: '+e.message});}
+});
+
 app.listen(process.env.PORT||3000,'0.0.0.0',()=>console.log('Trading Hub ready'));
