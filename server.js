@@ -5,10 +5,27 @@ const app = express();
 app.use(express.static('public'));
 app.get('/api/health', (_req,res) => res.json({ok:true,service:'Trading Hub',time:new Date().toISOString()}));
 
-const allowed = new Set(['R_10','R_25','R_50','R_75','R_100','BOOM1000','CRASH1000','JD10','stpRNG']);
+const endpoint='wss://api.derivws.com/trading/v1/options/ws/public';
+let catalog=null, catalogAt=0;
+function fetchCatalog(){
+ return new Promise((resolve,reject)=>{
+  const ws=new WebSocket(endpoint,{handshakeTimeout:12000});
+  const timer=setTimeout(()=>{ws.terminate();reject(new Error('Deriv symbol lookup timed out'));},16000);
+  const finish=(err,data)=>{clearTimeout(timer);ws.close();err?reject(err):resolve(data);};
+  ws.once('open',()=>ws.send(JSON.stringify({active_symbols:'brief',product_type:'basic'})));
+  ws.on('message',raw=>{try{const d=JSON.parse(raw.toString());if(d.error)finish(new Error(d.error.message));else if(d.active_symbols)finish(null,d.active_symbols);}catch(e){finish(e);}});
+  ws.once('error',e=>{clearTimeout(timer);reject(e);});
+ });
+}
+app.get('/api/deriv/symbols',async(_req,res)=>{
+ try{
+  if(!catalog||Date.now()-catalogAt>3600000){const all=await fetchCatalog();catalog=all.filter(x=>x.market==='synthetic_index' || x.market==='synthetic_indices' || x.market==='synthetic');catalogAt=Date.now();}
+  res.json({symbols:catalog.map(x=>({symbol:x.symbol,name:x.display_name||x.symbol})),count:catalog.length});
+ }catch(e){res.status(502).json({error:e.message});}
+});
 app.get('/api/deriv/stream', (req,res) => {
   const symbol = String(req.query.symbol || 'R_10');
-  if (!allowed.has(symbol)) return res.status(400).json({error:'Unsupported symbol'});
+  if (!/^[A-Za-z0-9_]{2,40}$/.test(symbol)) return res.status(400).json({error:'Invalid symbol'});
   res.setHeader('Content-Type','text/event-stream');
   res.setHeader('Cache-Control','no-cache, no-transform');
   res.setHeader('Connection','keep-alive');
