@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>Trading Hub</title><style>*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#eaf1ff;font:15px system-ui}header{padding:22px;background:#131f33;border-bottom:1px solid #2b3c57}h1{margin:0;font-size:23px}main{max-width:1100px;margin:auto;padding:18px}.muted{color:#9cb0cc}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}.card{background:#152238;border:1px solid #30415b;border-radius:15px;padding:18px}button,select{border:1px solid #466080;border-radius:9px;padding:11px;background:#203652;color:white}button{cursor:pointer;background:#167e74}button:disabled{opacity:.5}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #34445b}#status{margin:10px 0}small{color:#a6bad3}</style></head><body><header><h1>📈 Forex + Deriv Trading Hub</h1><div class="muted">Mobile-first trading dashboard • V2.6 beta • hourly levels and staged alerts</div></header><main><div class="grid"><section class="card"><h2>Forex</h2><p class="muted">Forex market scanner integration coming next.</p><select disabled><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>XAU/USD</option></select><p><small>Requires a market-data API key and backend scanner.</small></p></section><section class="card"><h2>Deriv Synthetic Indices</h2><p class="muted">Live tick quotes relayed through the Render server (where available).</p><select id="symbol"><option value="R_10">Volatility 10 (loading full list…)</option></select><button id="connect">Connect live</button><div id="symbolCount" class="muted" style="margin-top:8px">Loading Deriv market list…</div><div id="status" role="status">Disconnected</div><div id="price" style="font-size:28px;font-weight:bold">—</div><small>Historical candles and breakout analysis; verify data before trading.</small></section></div><section class="card" style="margin-top:14px"><h2>Live candlestick charts</h2><div class="grid"><div><h3>M5</h3><canvas id="chart5" width="600" height="280" style="width:100%;background:#0b1220;border-radius:10px"></canvas></div><div><h3>M15</h3><canvas id="chart15" width="600" height="280" style="width:100%;background:#0b1220;border-radius:10px"></canvas></div></div><p id="alert" role="status" style="font-weight:bold;color:#25c7a5">Waiting for breakout…</p><p id="levels" class="muted">Waiting for historical candles…</p></section><section class="card" style="margin-top:14px"><h2>All Markets Scanner</h2><p class="muted">Scan the available Deriv indices in batches. Results are snapshots, not continuous background monitoring.</p><button id="scanAll">Scan all markets</button> <span id="scanStatus" class="muted">Ready</span><div style="overflow-x:auto"><table><thead><tr><th>Market</th><th>Setup</th><th>Confidence*</th><th>Entry / SL / TP1 / TP2</th></tr></thead><tbody id="scanResults"><tr><td colspan="4">Press Scan all markets to start.</td></tr></tbody></table></div><small>*Confidence is a heuristic setup score, not a win probability. Signals are experimental.</small></section><section class="card" style="margin-top:14px"><h2>Signal dashboard</h2><table><thead><tr><th>Market</th><th>Signal</th><th>Entry / SL / TP</th></tr></thead><tbody><tr><td colspan="3" class="muted">Waiting for a confirmed breakout on closed M5 candles.</td></tr></tbody></table></section><p class="muted"><small>Educational prototype. Do not trade based on this dashboard until market feeds and signal logic are validated.</small></p></main><script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>Trading Hub</title><style>*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#eaf1ff;font:15px system-ui}header{padding:22px;background:#131f33;border-bottom:1px solid #2b3c57}h1{margin:0;font-size:23px}main{max-width:1100px;margin:auto;padding:18px}.muted{color:#9cb0cc}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}.card{background:#152238;border:1px solid #30415b;border-radius:15px;padding:18px}button,select{border:1px solid #466080;border-radius:9px;padding:11px;background:#203652;color:white}button{cursor:pointer;background:#167e74}button:disabled{opacity:.5}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #34445b}#status{margin:10px 0}small{color:#a6bad3} .scan-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px;margin-top:14px}.setup-card{border:1px solid #40546e;border-radius:12px;padding:14px;background:#101c30;overflow-wrap:anywhere}.setup-card h3{margin:0 0 8px}.setup-card p{margin:7px 0}.setup-card .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:13px}.setup-card .price-grid span{display:block;color:#9cb0cc}.setup-card .price-grid strong{display:block;color:#eaf1ff}.setup-card .state{font-weight:700;color:#4dd6b5}.setup-card .quiet{color:#9cb0cc}.setup-card .note{font-size:12px;color:#a6bad3}</style></head><body><header><h1>📈 Forex + Deriv Trading Hub</h1><div class="muted">Mobile-first trading dashboard • V2.7 beta • recent setups and mobile cards</div></header><main><div class="grid"><section class="card"><h2>Forex</h2><p class="muted">Forex market scanner integration coming next.</p><select disabled><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>XAU/USD</option></select><p><small>Requires a market-data API key and backend scanner.</small></p></section><section class="card"><h2>Deriv Synthetic Indices</h2><p class="muted">Live tick quotes relayed through the Render server (where available).</p><select id="symbol"><option value="R_10">Volatility 10 (loading full list…)</option></select><button id="connect">Connect live</button><div id="symbolCount" class="muted" style="margin-top:8px">Loading Deriv market list…</div><div id="status" role="status">Disconnected</div><div id="price" style="font-size:28px;font-weight:bold">—</div><small>Historical candles and breakout analysis; verify data before trading.</small></section></div><section class="card" style="margin-top:14px"><h2>Live candlestick charts</h2><div class="grid"><div><h3>M5</h3><canvas id="chart5" width="600" height="280" style="width:100%;background:#0b1220;border-radius:10px"></canvas></div><div><h3>M15</h3><canvas id="chart15" width="600" height="280" style="width:100%;background:#0b1220;border-radius:10px"></canvas></div></div><p id="alert" role="status" style="font-weight:bold;color:#25c7a5">Waiting for breakout…</p><p id="levels" class="muted">Waiting for historical candles…</p></section><section class="card" style="margin-top:14px"><h2>All Markets Scanner</h2><p class="muted">Scan available Deriv indices in batches. Shows recent six-candle breakouts, retests and near-level setups. Results are snapshots, not continuous monitoring.</p><button id="scanAll">Scan all markets</button> <span id="scanStatus" class="muted">Ready</span><div id="scanResults" class="scan-cards" aria-live="polite"><p class="muted">Press Scan all markets to start.</p></div><small>*Scores are experimental, not win probabilities. Near-breakout setups are not trade entries; historical signals may already be stale.</small></section><section class="card" style="margin-top:14px"><h2>Signal dashboard</h2><table><thead><tr><th>Market</th><th>Signal</th><th>Entry / SL / TP</th></tr></thead><tbody><tr><td colspan="3" class="muted">Waiting for a confirmed breakout on closed M5 candles.</td></tr></tbody></table></section><p class="muted"><small>Educational prototype. Do not trade based on this dashboard until market feeds and signal logic are validated.</small></p></main><script>
 let stream=null,series={300:[],900:[]},lastSignal='',history=[],pending=null,processedEpoch=0,levelState=null,earlyKey='';
 const status=document.querySelector('#status'),price=document.querySelector('#price'),btn=document.querySelector('#connect'),sym=document.querySelector('#symbol');
 const n=v=>Number(v), fmt=v=>Number(v).toFixed(3);
@@ -89,19 +89,59 @@ async function loadSymbols(){
 
 let scanning=false;
 function setupScore(raw){
- const a=(raw[300]||[]).map(candle),b=(raw[900]||[]).map(candle);
- if(a.length<35||b.length<25)return {symbol:raw.symbol,label:'Insufficient candles',score:0};
- const last=a[a.length-2],hour=Math.floor(last.epoch/3600)*3600,prior=a.filter(x=>x.epoch<hour).slice(-20);if(prior.length<20)return {symbol:raw.symbol,label:'Waiting for hourly levels',score:0};const res=Math.max(...prior.map(x=>x.high)),sup=Math.min(...prior.map(x=>x.low));
- const closes=b.slice(-7,-1).map(x=>x.close),trend=closes[closes.length-1]-closes[0];
- const risk=atr(a.slice(0,-1));if(!Number.isFinite(risk)||risk<=0)return {symbol:raw.symbol,label:'Insufficient ATR',score:0};
- const prev=a[a.length-3],dir=prev.close<=res&&last.close>res?'BUY':prev.close>=sup&&last.close<sup?'SELL':null;
- const aligned=dir==='BUY'?trend>0:dir==='SELL'?trend<0:false;
- const distance=dir==='BUY'?(last.close-res)/risk:dir==='SELL'?(sup-last.close)/risk:0;
- const score=dir?Math.min(90,Math.round(45+(aligned?25:0)+Math.min(20,distance*10))):0;
- const sl=dir==='BUY'?last.close-risk:last.close+risk;
- const tp1=dir==='BUY'?last.close+1.5*risk:last.close-1.5*risk;
- const tp2=dir==='BUY'?last.close+2*risk:last.close-2*risk;
- return {symbol:raw.symbol,label:dir?(dir+(aligned?' aligned':' countertrend')):'No breakout',score,levels:dir?[last.close,sl,tp1,tp2].map(fmt).join(' / '):'—'};
+ const a=(raw[300]||[]).map(candle).sort((x,y)=>x.epoch-y.epoch);
+ const b=(raw[900]||[]).map(candle).sort((x,y)=>x.epoch-y.epoch);
+ if(a.length<35||b.length<25)return {symbol:raw.symbol,label:'Insufficient candles',score:0,priority:0};
+ const now=Math.floor(Date.now()/1000),closed=a.filter(x=>x.epoch+300<=now);
+ const closed15=b.filter(x=>x.epoch+900<=now);
+ if(closed.length<30||closed15.length<7)return {symbol:raw.symbol,label:'Insufficient closed candles',score:0,priority:0};
+ const trend=trend15([...closed15, {close:closed15[closed15.length-1].close}]);
+ const latest=closed[closed.length-1],risk=atr(closed);
+ if(!Number.isFinite(risk)||risk<=0)return {symbol:raw.symbol,label:'Insufficient ATR',score:0,priority:0};
+ const levelAt=(epoch)=>{const hour=Math.floor(epoch/3600)*3600,prior=closed.filter(x=>x.epoch<hour).slice(-20);return prior.length===20?{res:Math.max(...prior.map(x=>x.high)),sup:Math.min(...prior.map(x=>x.low))}:null;};
+ const levels=levelAt(latest.epoch);
+ if(!levels)return {symbol:raw.symbol,label:'Waiting for hourly levels',score:0,priority:0};
+ let found=null;
+ // Last six completed M5 candles: each evaluated against levels that existed at its close.
+ for(let i=closed.length-1;i>=Math.max(1,closed.length-6);i--){
+  const c=closed[i],p=closed[i-1],l=levelAt(c.epoch);if(!l)continue;
+  const dir=p.close<=l.res&&c.close>l.res?'BUY':p.close>=l.sup&&c.close<l.sup?'SELL':null;
+  if(dir){found={dir,index:i,epoch:c.epoch,level:dir==='BUY'?l.res:l.sup,entry:c.close};break;}
+ }
+ let label='No breakout',priority=0,score=0,entry=null,dir=null,note='';
+ if(found){
+  dir=found.dir;entry=found.entry;const after=closed.slice(found.index+1);
+  const retest=after.find(c=>dir==='BUY'?c.low<=found.level&&c.close>found.level:c.high>=found.level&&c.close<found.level);
+  const invalid=after.some(c=>dir==='BUY'?c.close<found.level:c.close>found.level);
+  if(invalid&&!retest){label='Breakout invalidated';priority=1;}
+  else {label=retest?'Retest confirmed':after.length?'Retest pending':'Recent breakout confirmed';priority=retest?4:3;}
+  const aligned=dir==='BUY'?trend>0:trend<0;
+  score=Math.min(85,45+(aligned?20:0)+(retest?15:0));
+  note='Breakout '+new Date(found.epoch*1000).toLocaleTimeString()+' · '+(aligned?'M15 aligned':'M15 countertrend');
+ }else{
+  const gapUp=(levels.res-latest.close)/risk,gapDown=(latest.close-levels.sup)/risk;
+  if(gapUp>=0&&gapUp<=0.5){label='Near BUY breakout';priority=2;dir='BUY';}
+  else if(gapDown>=0&&gapDown<=0.5){label='Near SELL breakout';priority=2;dir='SELL';}
+  if(priority){note='Within 0.5 ATR of hourly level; not a confirmed signal';}
+ }
+ const sl=entry===null?null:dir==='BUY'?entry-risk:entry+risk;
+ const tp1=entry===null?null:dir==='BUY'?entry+1.5*risk:entry-1.5*risk;
+ const tp2=entry===null?null:dir==='BUY'?entry+2*risk:entry-2*risk;
+ return {symbol:raw.symbol,label,priority,score,note,entry:entry===null?null:fmt(entry),sl:sl===null?null:fmt(sl),tp1:tp1===null?null:fmt(tp1),tp2:tp2===null?null:fmt(tp2)};
+}
+function renderSetup(item,container){
+ const card=document.createElement('article');card.className='setup-card';
+ const heading=document.createElement('h3');heading.textContent=item.symbol;card.appendChild(heading);
+ const state=document.createElement('p');state.className=item.priority>=2?'state':'quiet';state.textContent=item.label;card.appendChild(state);
+ if(item.score){const confidence=document.createElement('p');confidence.textContent='Heuristic setup score: '+item.score+'/100';card.appendChild(confidence);}
+ if(item.entry!==null&&item.entry!==undefined){
+  const grid=document.createElement('div');grid.className='price-grid';
+  for(const [name,value] of [['Entry',item.entry],['Stop loss',item.sl],['TP1 (1:1.5)',item.tp1],['TP2 (1:2)',item.tp2]]){
+   const box=document.createElement('div'),label=document.createElement('span'),val=document.createElement('strong');label.textContent=name;val.textContent=value;box.append(label,val);grid.appendChild(box);
+  }card.appendChild(grid);
+ }
+ if(item.note){const p=document.createElement('p');p.className='note';p.textContent=item.note;card.appendChild(p);}
+ container.appendChild(card);
 }
 document.getElementById('scanAll').onclick=async()=>{
  if(scanning)return;
@@ -117,8 +157,8 @@ document.getElementById('scanAll').onclick=async()=>{
     all.push(...(data.results||[]).map(setupScore));failures+=(data.errors||[]).length;
    }catch(e){failures+=symbols.slice(i,i+6).length;}
   }
-  all.sort((a,b)=>b.score-a.score);
-  for(const item of all){const tr=document.createElement('tr');[item.symbol,item.label,item.score?item.score+'/100':'—',item.levels||'—'].forEach(value=>{const td=document.createElement('td');td.textContent=value;tr.appendChild(td);});body.appendChild(tr);}
+  all.sort((a,b)=>b.priority-a.priority||b.score-a.score);
+  for(const item of all)renderSetup(item,body);
   if(!all.length)body.textContent='No market data returned. Try again later.';
   statusEl.textContent='Finished: '+all.length+' markets returned; '+failures+' request errors. Last scan '+new Date().toLocaleTimeString();
  }finally{scanning=false;button.disabled=false;}
