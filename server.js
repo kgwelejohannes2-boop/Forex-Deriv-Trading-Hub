@@ -1,8 +1,31 @@
 import express from 'express';
 import WebSocket from 'ws';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
+const here = path.dirname(fileURLToPath(import.meta.url));
+// Serve the page from public/index.html when it exists. Otherwise look for the page next to server.js or in a
+// differently-cased "Public" folder, and accept names like "index (1).html". If nothing is found, say what the
+// server can see instead of a bare "Cannot GET /".
 app.use(express.static('public'));
+function listDir(d){try{return fs.readdirSync(d,{withFileTypes:true});}catch{return [];}}
+function findPage(){
+  const dirs=[here,...listDir(here).filter(e=>e.isDirectory()&&e.name.toLowerCase()==='public').map(e=>path.join(here,e.name))];
+  for(const d of dirs){
+    const files=listDir(d).filter(e=>e.isFile()).map(e=>e.name);
+    const hit=files.find(f=>f.toLowerCase()==='index.html')||files.find(f=>/^index.*\.html?$/i.test(f));
+    if(hit)return path.join(d,hit);
+  }
+  return null;
+}
+app.get('/', (_req, res) => {
+  const page=findPage();
+  if(page)return res.sendFile(page);
+  const top=listDir(here).filter(e=>e.name!=='node_modules'&&!e.name.startsWith('.')).map(e=>(e.isDirectory()?'[folder] ':'[file]   ')+e.name);
+  res.status(404).type('text/plain').send('Trading Hub server is running, but no index.html page was found.\n\nWhat the server can see at the top level:\n'+top.join('\n')+'\n');
+});
 app.get('/api/health', (_req,res) => res.json({ok:true,service:'Trading Hub',time:new Date().toISOString()}));
 
 const endpoint='wss://api.derivws.com/trading/v1/options/ws/public';
